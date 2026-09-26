@@ -53,7 +53,7 @@ def buscar_produto_shopee(link):
 
     with urlopen(req, timeout=15) as resposta:
         pagina = resposta.read().decode("utf-8", errors="ignore")
-
+         print("HTML SHOPEE:", pagina[:2000], flush=True)
     # Tenta encontrar o nome do produto
     nome_match = re.search(
         r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
