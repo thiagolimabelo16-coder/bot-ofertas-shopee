@@ -109,9 +109,10 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔎 Buscando dados do produto...")
 
         try:
-              dados = buscar_produto_shopee(link)
-        except Exception:
-              dados = None
+            dados = buscar_produto_shopee(link)
+        except Exception as e:
+            print("ERRO SHOPEE:", repr(e), flush=True)
+            dados = None
 
         if not dados:
             await update.message.reply_text(
