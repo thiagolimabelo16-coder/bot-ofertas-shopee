@@ -31,9 +31,12 @@ def buscar_produto_shopee(link):
         "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8"
     }
 
-    req = Request(link, headers=headers)
+    resolver_req = Request(
+        link,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
 
-    with opener.open(req, timeout=15) as resposta:
+    with urlopen(resolver_req, timeout=15) as resposta:
         url_final = resposta.geturl()
         resposta.read()
 
