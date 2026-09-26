@@ -2,8 +2,8 @@ import os
 import html
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-
-from telegram import Update
+from urllib.parse import quote
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -60,9 +60,27 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     f"💸 <b>Por R$ {preco_novo_html}</b>\n\n"
     f"🛒 <b>COMPRE AQUI:</b>\n{link_html}\n\n"
     "⚡ Preço e disponibilidade podem mudar."
+    )   
+    texto_whatsapp = (
+        "🔥 BAIXOU MAISS 🔥\n\n"
+        f"🛍️ {produto}\n\n"
+        f"De ~R$ {preco_antigo}~\n"
+        f"💸 Por R$ {preco_novo}\n\n"
+        f"🛒 COMPRE AQUI:\n{link}\n\n"
+        "⚡ Preço e disponibilidade podem mudar."
     )
 
-    await update.message.reply_text(oferta, parse_mode="HTML")
+    whatsapp_url = "https://wa.me/?text=" + quote(texto_whatsapp)
+
+    teclado = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📲 Enviar no WhatsApp", url=whatsapp_url)]
+    ])
+
+    await update.message.reply_text(
+        oferta,
+        parse_mode="HTML",
+        reply_markup=teclado
+        )
     await context.bot.send_message(chat_id=CANAL, text=oferta, parse_mode="HTML")
 
 def main():
