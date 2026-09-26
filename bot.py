@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
-
+CANAL = "@ofertasshopee7392"
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -52,10 +52,9 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 R$ {preco}\n\n"
         f"👉 COMPRE AQUI:\n{link}\n\n"
         f"⚡ Aproveite!"
-    )
-
-    await update.message.reply_text(oferta)
-
+    ) 
+ await update.message.reply_text(oferta)
+ await context.bot.send_message(chat_id=CANAL, text=oferta)
 
 def main():
     if not TOKEN:
