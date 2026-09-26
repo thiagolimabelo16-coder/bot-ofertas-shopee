@@ -37,45 +37,62 @@ def buscar_produto_shopee(link):
 
     shopid, itemid = achou.groups()
 
-    api_url = (
-        "https://shopee.com.br/api/v4/item/get"
-        f"?itemid={itemid}&shopid={shopid}"
-    )
-
+    # Busca a própria página do produto em vez da API /api/v4
     req = Request(
-        api_url,
+        url_final,
         headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "application/json"
+            "User-Agent": (
+                "Mozilla/5.0 (Linux; Android 13) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Mobile Safari/537.36"
+            ),
+            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+            "Accept": "text/html,application/xhtml+xml"
         }
     )
 
     with urlopen(req, timeout=15) as resposta:
-        dados = json.loads(resposta.read().decode("utf-8"))
+        pagina = resposta.read().decode("utf-8", errors="ignore")
 
-    item = dados.get("data")
+    # Tenta encontrar o nome do produto
+    nome_match = re.search(
+        r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
+        pagina,
+        re.IGNORECASE
+    )
 
-    if not item:
+    if not nome_match:
+        nome_match = re.search(
+            r'<title>(.*?)</title>',
+            pagina,
+            re.IGNORECASE | re.DOTALL
+        )
+
+    # Tenta encontrar o preço
+    preco_match = re.search(
+        r'"price"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
+        pagina,
+        re.IGNORECASE
+    )
+
+    if not nome_match or not preco_match:
+        print("ERRO SHOPEE: nome ou preço não encontrados", flush=True)
         return None
 
-    nome = item.get("name")
-    preco_atual_raw = item.get("price")
-    preco_antigo_raw = item.get("price_before_discount")
+    nome = html.unescape(nome_match.group(1)).strip()
 
-    if not nome or not preco_atual_raw:
-        return None
+    valor = float(preco_match.group(1))
 
-    preco_atual = formatar_preco(preco_atual_raw / 100000)
+    # Alguns valores da Shopee aparecem multiplicados por 100000
+    if valor > 100000:
+        valor = valor / 100000
 
-    preco_antigo = None
-
-    if preco_antigo_raw and preco_antigo_raw > preco_atual_raw:
-        preco_antigo = formatar_preco(preco_antigo_raw / 100000)
+    preco_atual = formatar_preco(valor)
 
     return {
         "produto": nome,
         "preco_novo": preco_atual,
-        "preco_antigo": preco_antigo
+        "preco_antigo": None
     }
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
