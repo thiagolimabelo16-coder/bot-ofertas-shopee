@@ -101,43 +101,103 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    linhas = update.message.text.splitlines()
+        texto = update.message.text.strip()
+    linhas = texto.splitlines()
 
-    if len(linhas) < 4:
-      await update.message.reply_text(
-        "Envie: nome, preco antigo, preco promocional e link, cada um em uma linha."
-    )
-      return
-    produto = linhas[0].strip()
-    preco_antigo = linhas[1].strip()
-    preco_novo = linhas[2].strip()
-    link = linhas[3].strip()
-    valor_antigo = float(preco_antigo.replace(".", "").replace(",", "."))
+    if len(linhas) == 1 and texto.startswith(("http://", "https://")) and "shopee" in texto.lower():
+        link = texto
+
+        await update.message.reply_text("🔎 Buscando dados do produto...")
+
+        try:
+            dados = buscar_produto_shopee(link)
+        except Exception:
+            dados = None
+
+        if not dados:
+            await update.message.reply_text(
+                "Não consegui ler esse produto automaticamente.\n\n"
+                "Você ainda pode enviar 4 linhas:\n"
+                "Nome do produto\n"
+                "Preço antigo\n"
+                "Preço promocional\n"
+                "Link de afiliado"
+            )
+            return
+
+        produto = dados["produto"]
+        preco_novo = dados["preco_novo"]
+        preco_antigo = dados["preco_antigo"]
+
+    else:
+        if len(linhas) < 4:
+            await update.message.reply_text(
+                "Envie somente o link da Shopee ou 4 linhas:\n"
+                "Nome do produto\n"
+                "Preço antigo\n"
+                "Preço promocional\n"
+                "Link de afiliado"
+            )
+            return
+
+        produto = linhas[0].strip()
+        preco_antigo = linhas[1].strip()
+        preco_novo = linhas[2].strip()
+        link = linhas[3].strip()
+
     valor_novo = float(preco_novo.replace(".", "").replace(",", "."))
-    desconto = round((1 - valor_novo / valor_antigo) * 100)
+    desconto = None
+
+    if preco_antigo and preco_antigo not in ("0", "0,00", "-"):
+        valor_antigo = float(preco_antigo.replace(".", "").replace(",", "."))
+
+        if valor_antigo > valor_novo:
+            desconto = round((1 - valor_novo / valor_antigo) * 100)
+        else:
+            preco_antigo = None
+    else:
+        preco_antigo = None
     produto_html = html.escape(produto)
-    preco_antigo_html = html.escape(preco_antigo)
+    preco_antigo_html = html.escape(preco_antigo) if preco_antigo else None
     preco_novo_html = html.escape(preco_novo)
     link_html = html.escape(link, quote=True)
 
+    if preco_antigo and desconto is not None:
+        bloco_preco_telegram = (
+            f"De <s>R$ {preco_antigo_html}</s>\n"
+            f"💸 <b>Por R$ {preco_novo_html}</b>\n"
+            f"🏷️ <b>{desconto}% OFF</b>\n\n"
+        )
+
+        bloco_preco_whatsapp = (
+            f"De ~R$ {preco_antigo}~\n"
+            f"💸 *Por R$ {preco_novo}*\n"
+            f"🏷️ *{desconto}% OFF*\n\n"
+        )
+    else:
+        bloco_preco_telegram = (
+            f"💸 <b>Por R$ {preco_novo_html}</b>\n\n"
+        )
+
+        bloco_preco_whatsapp = (
+            f"💸 *Por R$ {preco_novo}*\n\n"
+        )
+
     oferta = (
-    "🔥 <b>BAIXOU MAISS</b> 🔥\n\n"
-    f"🛍️ <b>{produto_html}</b>\n\n"
-    f"De <s>R$ {preco_antigo_html}</s>\n"
-    f"💸 <b>Por R$ {preco_novo_html}</b>\n\n"
-    f"🏷️ <b>{desconto}％ OFF</b>\n\n"
-    f"🛒 <b>COMPRE AQUI:</b>\n{link_html}\n\n"
-    "⚡ Preço e disponibilidade podem mudar."
-    )   
-    texto_whatsapp = (
-            "🔥 *BAIXOU MAISS* 🔥\n\n"
-        f"🛍️ *{produto}*\n\n"
-        f"De ~R$ {preco_antigo}~\n"
-        f"💸 *Por R$ {preco_novo}*\n"
-        f"🏷️ *{desconto}％ OFF*\n\n"
-        f"🛒 *COMPRE AQUI:*\n{link}\n\n"
+        "🔥 <b>BAIXOU MAISS</b> 🔥\n\n"
+        f"🛍️ <b>{produto_html}</b>\n\n"
+        f"{bloco_preco_telegram}"
+        f"🛒 <b>COMPRE AQUI:</b>\n{link_html}\n\n"
         "⚡ Preço e disponibilidade podem mudar."
     )
+
+    texto_whatsapp = (
+        "🔥 *BAIXOU MAISS* 🔥\n\n"
+        f"🛍️ *{produto}*\n\n"
+        f"{bloco_preco_whatsapp}"
+        f"🛒 *COMPRE AQUI:*\n{link}\n\n"
+        "⚡ Preço e disponibilidade podem mudar."
+       )
 
     whatsapp_url = "https://wa.me/?text=" + quote(texto_whatsapp)
 
