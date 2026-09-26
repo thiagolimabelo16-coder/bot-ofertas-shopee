@@ -189,7 +189,7 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
             preco_antigo = dados["preco_antigo"]
 
     else:
-         if len(linhas) not in (3, 4):
+        if len(linhas) not in (3, 4):
             await update.message.reply_text(
                 "Envie em um destes formatos:\n\n"
                 "SEM promoção (3 linhas):\n"
