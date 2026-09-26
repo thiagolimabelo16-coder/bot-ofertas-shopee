@@ -1,4 +1,5 @@
 import os
+import html
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -26,35 +27,43 @@ def iniciar_servidor():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🔥 Gerador de Ofertas Shopee\n\n"
-        "Envie 3 linhas:\n"
-        "Nome do produto\n"
-        "Preço\n"
-        "Link de afiliado"
+        "Envie 4 linhas:\n"
+"Nome do produto\n"
+"Preço antigo\n"
+"Preço promocional\n"
+"Link de afiliado"
     )
 
 
 async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     linhas = update.message.text.splitlines()
 
-    if len(linhas) < 3:
-        await update.message.reply_text(
-            "Envie: nome, preço e link, cada um em uma linha."
-        )
-        return
+    if len(linhas) < 4:
+    await update.message.reply_text(
+        "Envie: nome, preco antigo, preco promocional e link, cada um em uma linha."
+    )
+    return
     produto = linhas[0].strip()
-    preco = linhas[1].strip()
-    link = linhas[2].strip()
+    preco_antigo = linhas[1].strip()
+    preco_novo = linhas[2].strip()
+    link = linhas[3].strip()
+
+    produto_html = html.escape(produto)
+    preco_antigo_html = html.escape(preco_antigo)
+    preco_novo_html = html.escape(preco_novo)
+    link_html = html.escape(link, quote=True)
 
     oferta = (
-        f"🔥 OFERTA 🔥\n\n"
-        f"🛍️ {produto}\n"
-        f"💰 R$ {preco}\n\n"
-        f"👉 COMPRE AQUI:\n{link}\n\n"
-        f"⚡ Aproveite!"
+    "🔥 <b>BAIXOU MAISS</b> 🔥\n\n"
+    f"🛍️ <b>{produto_html}</b>\n\n"
+    f"De <s>R$ {preco_antigo_html}</s>\n"
+    f"💸 <b>Por R$ {preco_novo_html}</b>\n\n"
+    f"🛒 <b>COMPRE AQUI:</b>\n{link_html}\n\n"
+    "⚡ Preço e disponibilidade podem mudar."
     )
 
-    await update.message.reply_text(oferta)
-    await context.bot.send_message(chat_id=CANAL, text=oferta)
+    await update.message.reply_text(oferta, parse_mode="HTML")
+    await context.bot.send_message(chat_id=CANAL, text=oferta, parse_mode="HTML")
 
 def main():
     if not TOKEN:
