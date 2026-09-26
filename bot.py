@@ -16,15 +16,30 @@ def formatar_preco(valor):
 
 
 def buscar_produto_shopee(link):
-    req = Request(
-        link,
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
+    from http.cookiejar import CookieJar
+    from urllib.request import build_opener, HTTPCookieProcessor
 
-    with urlopen(req, timeout=15) as resposta:
+    cookies = CookieJar()
+    opener = build_opener(HTTPCookieProcessor(cookies))
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 13) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Mobile Safari/537.36"
+        ),
+        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8"
+    }
+
+    req = Request(link, headers=headers)
+
+    with opener.open(req, timeout=15) as resposta:
         url_final = resposta.geturl()
-        print("URL FINAL SHOPEE:", url_final, flush=True)
-        achou = re.search(r"/opaanlp/(\d+)/(\d+)", url_final)
+        resposta.read()
+
+    print("URL FINAL SHOPEE:", url_final, flush=True)
+
+    achou = re.search(r"/opaanlp/(\d+)/(\d+)", url_final)
 
     if not achou:
         achou = re.search(r"-i\.(\d+)\.(\d+)", url_final)
@@ -33,85 +48,86 @@ def buscar_produto_shopee(link):
         achou = re.search(r"/product/(\d+)/(\d+)", url_final)
 
     if not achou:
+        print("ERRO SHOPEE: IDs não encontrados", flush=True)
         return None
 
     shopid, itemid = achou.groups()
 
-    # Busca o HTML da página do produto
-    req = Request(
-        url_final,
+    api_url = (
+        "https://shopee.com.br/api/v4/pdp/get_pc"
+        f"?shop_id={shopid}&item_id={itemid}"
+    )
+
+    api_req = Request(
+        api_url,
         headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Linux; Android 13) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Mobile Safari/537.36"
-            ),
+            "User-Agent": headers["User-Agent"],
+            "Accept": "application/json",
             "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
-            "Accept": "text/html,application/xhtml+xml"
+            "Referer": url_final,
+            "X-API-SOURCE": "pc"
         }
     )
 
-    with urlopen(req, timeout=15) as resposta:
-        pagina = resposta.read().decode("utf-8", errors="ignore")
+    with opener.open(api_req, timeout=15) as resposta:
+        dados = json.loads(resposta.read().decode("utf-8"))
 
-    # Procura nome em vários formatos usados pela Shopee
-    nome_match = re.search(
-        r'"name"\s*:\s*"([^"]+)"',
-        pagina,
-        re.IGNORECASE
-    )
-
-    if not nome_match:
-        nome_match = re.search(
-            r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
-            pagina,
-            re.IGNORECASE
-        )
-
-    if not nome_match:
-        nome_match = re.search(
-            r'<title>(.*?)</title>',
-            pagina,
-            re.IGNORECASE | re.DOTALL
-        )
-
-    # Procura preço em vários formatos
-    preco_match = re.search(
-        r'"price"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
-        pagina,
-        re.IGNORECASE
-    )
-
-    if not preco_match:
-        preco_match = re.search(
-            r'"price_min"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
-            pagina,
-            re.IGNORECASE
-        )
-
-    if not preco_match:
-        preco_match = re.search(
-            r'"priceMin"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
-            pagina,
-            re.IGNORECASE
-        )
-
-    if not nome_match or not preco_match:
-        print("ERRO SHOPEE: nome ou preço não encontrados", flush=True)
+    if dados.get("error") not in (None, 0):
+        print("ERRO API SHOPEE:", dados, flush=True)
         return None
 
-    nome = html.unescape(nome_match.group(1)).strip()
-    valor = float(preco_match.group(1))
+    data = dados.get("data") or {}
+    item = data.get("item") or {}
+    produto_preco = data.get("product_price") or {}
 
-    if valor > 100000:
-        valor = valor / 100000
+    nome = item.get("title") or item.get("name")
 
-    preco_atual = formatar_preco(valor)
+    def pegar_valor(obj):
+        if isinstance(obj, (int, float)):
+            return obj
+
+        if isinstance(obj, dict):
+            valor = obj.get("single_value")
+
+            if isinstance(valor, (int, float)) and valor > 0:
+                return valor
+
+            valor = obj.get("range_min")
+
+            if isinstance(valor, (int, float)) and valor > 0:
+                return valor
+
+        return None
+
+    preco_atual_raw = pegar_valor(produto_preco.get("price"))
+
+    if not preco_atual_raw:
+        preco_atual_raw = item.get("price") or item.get("price_min")
+
+    preco_antigo_raw = pegar_valor(
+        produto_preco.get("price_before_discount")
+    )
+
+    if not preco_antigo_raw:
+        preco_antigo_raw = item.get("price_before_discount")
+
+    if not nome or not preco_atual_raw:
+        print("ERRO SHOPEE: API sem nome/preço", flush=True)
+        return None
+
+    preco_atual = formatar_preco(float(preco_atual_raw) / 100000)
+
+    preco_antigo = None
+
+    if preco_antigo_raw and preco_antigo_raw > preco_atual_raw:
+        preco_antigo = formatar_preco(
+            float(preco_antigo_raw) / 100000
+        )
 
     return {
         "produto": nome,
         "preco_novo": preco_atual,
-        "preco_antigo": None
+        "preco_antigo": preco_antigo
     }
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
