@@ -110,6 +110,7 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
             dados = buscar_produto_shopee(link)
+            print("DADOS SHOPEE:", repr(dados), flush=True)
         except Exception as e:
             print("ERRO SHOPEE:", repr(e), flush=True)
             dados = None
