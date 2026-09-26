@@ -189,20 +189,31 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
             preco_antigo = dados["preco_antigo"]
 
     else:
-        if len(linhas) < 4:
+         if len(linhas) not in (3, 4):
             await update.message.reply_text(
-            "Envie somente o link da Shopee ou 4 linhas:\n"
-            "Nome do produto\n"
-            "Preço antigo\n"
-            "Preço promocional\n"
-            "Link de afiliado"
+                "Envie em um destes formatos:\n\n"
+                "SEM promoção (3 linhas):\n"
+                "Nome do produto\n"
+                "Preço atual\n"
+                "Link de afiliado\n\n"
+                "COM promoção (4 linhas):\n"
+                "Nome do produto\n"
+                "Preço antigo\n"
+                "Preço promocional\n"
+                "Link de afiliado"
             )
             return
 
         produto = linhas[0].strip()
-        preco_antigo = linhas[1].strip()
-        preco_novo = linhas[2].strip()
-        link = linhas[3].strip()
+
+        if len(linhas) == 3:
+            preco_antigo = None
+            preco_novo = linhas[1].strip()
+            link = linhas[2].strip()
+        else:
+            preco_antigo = linhas[1].strip()
+            preco_novo = linhas[2].strip()
+            link = linhas[3].strip()
 
     valor_novo = float(preco_novo.replace(".", "").replace(",", "."))
     desconto = None
