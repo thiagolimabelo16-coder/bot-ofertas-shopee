@@ -39,10 +39,10 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     linhas = update.message.text.splitlines()
 
     if len(linhas) < 4:
-    await update.message.reply_text(
+      await update.message.reply_text(
         "Envie: nome, preco antigo, preco promocional e link, cada um em uma linha."
     )
-    return
+      return
     produto = linhas[0].strip()
     preco_antigo = linhas[1].strip()
     preco_novo = linhas[2].strip()
