@@ -47,7 +47,9 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     preco_antigo = linhas[1].strip()
     preco_novo = linhas[2].strip()
     link = linhas[3].strip()
-
+    valor_antigo = float(preco_antigo.replace(".", "").replace(",", "."))
+    valor_novo = float(preco_novo.replace(".", "").replace(",", "."))
+    desconto = round((1 - valor_novo / valor_antigo) * 100)
     produto_html = html.escape(produto)
     preco_antigo_html = html.escape(preco_antigo)
     preco_novo_html = html.escape(preco_novo)
@@ -58,15 +60,17 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     f"🛍️ <b>{produto_html}</b>\n\n"
     f"De <s>R$ {preco_antigo_html}</s>\n"
     f"💸 <b>Por R$ {preco_novo_html}</b>\n\n"
+    f"🏷️ <b>{desconto}% OFF</b>\n\n"
     f"🛒 <b>COMPRE AQUI:</b>\n{link_html}\n\n"
     "⚡ Preço e disponibilidade podem mudar."
     )   
     texto_whatsapp = (
-        "🔥 BAIXOU MAISS 🔥\n\n"
-        f"🛍️ {produto}\n\n"
+            "🔥 *BAIXOU MAISS* 🔥\n\n"
+        f"🛍️ *{produto}*\n\n"
         f"De ~R$ {preco_antigo}~\n"
-        f"💸 Por R$ {preco_novo}\n\n"
-        f"🛒 COMPRE AQUI:\n{link}\n\n"
+        f"💸 *Por R$ {preco_novo}*\n"
+        f"🏷️ *{desconto}% OFF*\n\n"
+        f"🛒 *COMPRE AQUI:*\n{link}\n\n"
         "⚡ Preço e disponibilidade podem mudar."
     )
 
