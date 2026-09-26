@@ -37,7 +37,7 @@ def buscar_produto_shopee(link):
 
     shopid, itemid = achou.groups()
 
-    # Busca a própria página do produto em vez da API /api/v4
+    # Busca o HTML da página do produto
     req = Request(
         url_final,
         headers={
@@ -53,13 +53,20 @@ def buscar_produto_shopee(link):
 
     with urlopen(req, timeout=15) as resposta:
         pagina = resposta.read().decode("utf-8", errors="ignore")
-    print("HTML SHOPEE:", pagina[:2000], flush=True)
-    # Tenta encontrar o nome do produto
+
+    # Procura nome em vários formatos usados pela Shopee
     nome_match = re.search(
-        r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
+        r'"name"\s*:\s*"([^"]+)"',
         pagina,
         re.IGNORECASE
     )
+
+    if not nome_match:
+        nome_match = re.search(
+            r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
+            pagina,
+            re.IGNORECASE
+        )
 
     if not nome_match:
         nome_match = re.search(
@@ -68,22 +75,34 @@ def buscar_produto_shopee(link):
             re.IGNORECASE | re.DOTALL
         )
 
-    # Tenta encontrar o preço
+    # Procura preço em vários formatos
     preco_match = re.search(
         r'"price"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
         pagina,
         re.IGNORECASE
     )
 
+    if not preco_match:
+        preco_match = re.search(
+            r'"price_min"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
+            pagina,
+            re.IGNORECASE
+        )
+
+    if not preco_match:
+        preco_match = re.search(
+            r'"priceMin"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?',
+            pagina,
+            re.IGNORECASE
+        )
+
     if not nome_match or not preco_match:
         print("ERRO SHOPEE: nome ou preço não encontrados", flush=True)
         return None
 
     nome = html.unescape(nome_match.group(1)).strip()
-
     valor = float(preco_match.group(1))
 
-    # Alguns valores da Shopee aparecem multiplicados por 100000
     if valor > 100000:
         valor = valor / 100000
 
