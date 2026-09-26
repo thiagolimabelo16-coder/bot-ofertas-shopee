@@ -99,10 +99,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 "Link de afiliado"
     )
 
-
 async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        texto = update.message.text.strip()
-        linhas = texto.splitlines()
+    texto = update.message.text.strip()
+    linhas = texto.splitlines()
 
     if len(linhas) == 1 and texto.startswith(("http://", "https://")) and "shopee" in texto.lower():
         link = texto
