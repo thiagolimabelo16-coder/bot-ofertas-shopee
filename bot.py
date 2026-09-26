@@ -102,7 +102,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto = update.message.text.strip()
-    linhas = texto.splitlines()
+        linhas = texto.splitlines()
 
     if len(linhas) == 1 and texto.startswith(("http://", "https://")) and "shopee" in texto.lower():
         link = texto
@@ -110,33 +110,33 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔎 Buscando dados do produto...")
 
         try:
-            dados = buscar_produto_shopee(link)
+              dados = buscar_produto_shopee(link)
         except Exception:
-            dados = None
+              dados = None
 
         if not dados:
             await update.message.reply_text(
-                "Não consegui ler esse produto automaticamente.\n\n"
-                "Você ainda pode enviar 4 linhas:\n"
-                "Nome do produto\n"
-                "Preço antigo\n"
-                "Preço promocional\n"
-                "Link de afiliado"
+            "Não consegui ler esse produto automaticamente.\n\n"
+            "Você ainda pode enviar 4 linhas:\n"
+            "Nome do produto\n"
+            "Preço antigo\n"
+            "Preço promocional\n"
+            "Link de afiliado"
             )
             return
 
-        produto = dados["produto"]
-        preco_novo = dados["preco_novo"]
-        preco_antigo = dados["preco_antigo"]
+            produto = dados["produto"]
+            preco_novo = dados["preco_novo"]
+            preco_antigo = dados["preco_antigo"]
 
     else:
         if len(linhas) < 4:
             await update.message.reply_text(
-                "Envie somente o link da Shopee ou 4 linhas:\n"
-                "Nome do produto\n"
-                "Preço antigo\n"
-                "Preço promocional\n"
-                "Link de afiliado"
+            "Envie somente o link da Shopee ou 4 linhas:\n"
+            "Nome do produto\n"
+            "Preço antigo\n"
+            "Preço promocional\n"
+            "Link de afiliado"
             )
             return
 
