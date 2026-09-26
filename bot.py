@@ -23,7 +23,7 @@ def buscar_produto_shopee(link):
 
     with urlopen(req, timeout=15) as resposta:
         url_final = resposta.geturl()
-
+        print("URL FINAL SHOPEE:", url_final, flush=True)
     achou = re.search(r"-i\.(\d+)\.(\d+)", url_final)
 
     if not achou:
