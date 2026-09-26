@@ -24,16 +24,16 @@ def buscar_produto_shopee(link):
     with urlopen(req, timeout=15) as resposta:
         url_final = resposta.geturl()
         print("URL FINAL SHOPEE:", url_final, flush=True)
-    achou = re.search(r"/opaanlp/(\d+)/(\d+)", url_final)
+        achou = re.search(r"/opaanlp/(\d+)/(\d+)", url_final)
 
-if not achou:
-    achou = re.search(r"-i\.(\d+)\.(\d+)", url_final)
+    if not achou:
+        achou = re.search(r"-i\.(\d+)\.(\d+)", url_final)
 
-if not achou:
-    achou = re.search(r"/product/(\d+)/(\d+)", url_final)
+    if not achou:
+        achou = re.search(r"/product/(\d+)/(\d+)", url_final)
 
-if not achou:
-    return None
+    if not achou:
+        return None
 
     shopid, itemid = achou.groups()
 
