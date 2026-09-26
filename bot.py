@@ -41,7 +41,6 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Envie: nome, preço e link, cada um em uma linha."
         )
         return
-
     produto = linhas[0].strip()
     preco = linhas[1].strip()
     link = linhas[2].strip()
@@ -52,9 +51,10 @@ async def receber_oferta(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 R$ {preco}\n\n"
         f"👉 COMPRE AQUI:\n{link}\n\n"
         f"⚡ Aproveite!"
-    ) 
- await update.message.reply_text(oferta)
- await context.bot.send_message(chat_id=CANAL, text=oferta)
+    )
+
+    await update.message.reply_text(oferta)
+    await context.bot.send_message(chat_id=CANAL, text=oferta)
 
 def main():
     if not TOKEN:
