@@ -1,14 +1,79 @@
 import os
 import html
+import json
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import quote
+from urllib.request import Request, urlopen
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CANAL = "@ofertasshopee7392"
+def formatar_preco(valor):
+    return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+
+def buscar_produto_shopee(link):
+    req = Request(
+        link,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+
+    with urlopen(req, timeout=15) as resposta:
+        url_final = resposta.geturl()
+
+    achou = re.search(r"-i\.(\d+)\.(\d+)", url_final)
+
+    if not achou:
+        achou = re.search(r"/product/(\d+)/(\d+)", url_final)
+
+    if not achou:
+        return None
+
+    shopid, itemid = achou.groups()
+
+    api_url = (
+        "https://shopee.com.br/api/v4/item/get"
+        f"?itemid={itemid}&shopid={shopid}"
+    )
+
+    req = Request(
+        api_url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json"
+        }
+    )
+
+    with urlopen(req, timeout=15) as resposta:
+        dados = json.loads(resposta.read().decode("utf-8"))
+
+    item = dados.get("data")
+
+    if not item:
+        return None
+
+    nome = item.get("name")
+    preco_atual_raw = item.get("price")
+    preco_antigo_raw = item.get("price_before_discount")
+
+    if not nome or not preco_atual_raw:
+        return None
+
+    preco_atual = formatar_preco(preco_atual_raw / 100000)
+
+    preco_antigo = None
+
+    if preco_antigo_raw and preco_antigo_raw > preco_atual_raw:
+        preco_antigo = formatar_preco(preco_antigo_raw / 100000)
+
+    return {
+        "produto": nome,
+        "preco_novo": preco_atual,
+        "preco_antigo": preco_antigo
+    }
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
